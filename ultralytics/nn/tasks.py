@@ -27,6 +27,7 @@ from ultralytics.nn.modules import (
     ADown,
     Bottleneck,
     BottleneckCSP,
+    CBAM,
     C2f,
     C2fAttn,
     C2fCIB,
