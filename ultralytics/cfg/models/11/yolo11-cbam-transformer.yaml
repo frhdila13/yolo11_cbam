@@ -14,7 +14,7 @@ scales: # model compound scaling constants, i.e. 'model=yolo11n.yaml' will call 
   l: [1.00, 1.00, 512] # summary: 631 layers, 25372160 parameters, 25372144 gradients, 87.6 GFLOPs
   x: [1.00, 1.50, 512] # summary: 631 layers, 56966176 parameters, 56966160 gradients, 196.0 GFLOPs
 
-# YOLO11n backbone (Optimized TransformerBlock Placement)
+# YOLO11n backbone (Optimized CBAM-TransformerBlock Placement)
 backbone:
   - [-1, 1, Conv, [64, 3, 2]]   # 0-P1/2
   - [-1, 1, Conv, [128, 3, 2]]  # 1-P2/4
@@ -26,7 +26,7 @@ backbone:
   - [-1, 2, C3k2, [512, True]]
   - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
   - [-1, 2, C3k2, [1024, True]]
-  - [-1, 1, TransformerBlock, [1024, 1024, 8, 6]]  # ✅ Transformer at P5 for global context
+  - [-1, 1, TransformerBlock, [512, 512, 8, 6]]  # ✅ Transformer at P5 for global context
   - [-1, 1, SPPF, [1024, 5]]    # 9
   - [-1, 2, C2PSA, [1024]]
 
