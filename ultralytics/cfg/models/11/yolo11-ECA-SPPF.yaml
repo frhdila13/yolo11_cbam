@@ -25,8 +25,8 @@ backbone:
   - [-1, 2, C3k2, [512, True]]
   - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
   - [-1, 2, C3k2, [1024, True]]
-  - [-1, 1, AIFI, [512, 2048, 8, 0.2]]  # ✅ Corrected AIFI placement
   - [-1, 1, SPPF, [1024, 5]]    # 9
+  - [-1, 1, ECAAttention, [1024]]
   - [-1, 2, C2PSA, [1024]]
 
 # YOLO11n head
