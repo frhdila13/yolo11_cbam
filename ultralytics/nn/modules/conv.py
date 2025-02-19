@@ -276,29 +276,29 @@ class RepConv(nn.Module):
         if hasattr(self, "id_tensor"):
             self.__delattr__("id_tensor")
 
-class ECAAttention(nn.Module):
-    """Constructs a ECA module.
 
-    Args:
-        channel: Number of channels of the input feature map
-        k_size: Adaptive selection of kernel size
-    """
+class ECAAttention(nn.Module):
+    """Efficient Channel Attention (ECA) Module"""
     def __init__(self, channel, k_size=7):
         super(ECAAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # Global spatial feature descriptor
         self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        # feature descriptor on the global spatial information
+        b, c, h, w = x.shape  # Get batch size, channels, height, width
+
+        # Global Average Pooling -> (B, C, 1, 1)
         y = self.avg_pool(x)
 
-        # Two different branches of ECA module
-        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
+        # Convert (B, C, 1, 1) → (B, 1, C), apply 1D conv, then reshape back
+        y = self.conv(y.squeeze(-1).transpose(-1, -2))  # (B, 1, C) after conv
+        y = y.transpose(-1, -2).unsqueeze(-1)  # (B, C, 1, 1) 
 
-        # Multi-scale information fusion
+        # Apply sigmoid activation
         y = self.sigmoid(y)
 
+        # Apply attention to input tensor
         return x * y.expand_as(x)
 
 
