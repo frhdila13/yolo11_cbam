@@ -279,25 +279,25 @@ class RepConv(nn.Module):
 
 class ECAAttention(nn.Module):
     """ECA Module with strict shape preservation."""
-    def __init__(self, channel, k_size=7):
+    def __init__(self, channel, k_size=3):
         super(ECAAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # Global pooling to (B, C, 1, 1)
-        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)  
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # Global pooling (B, C, 1, 1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)  # Conv1D across channels
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        b, c, h, w = x.shape  
-        print(f"Before ECA: {x.shape}")  # Debugging: Print input shape
-    
-        y = self.avg_pool(x)  
-        y = self.conv(y.view(b, 1, c))  
-        y = self.sigmoid(y.view(b, c, 1, 1))  
-    
-        y = y.expand(b, c, h, w)  
-        print(f"After ECA: {y.shape}")  # Debugging: Print output shape
-    
-        return x * y  
+        b, c, h, w = x.shape  # Get input shape
+        print(f"Before ECA: {x.shape}")  # Debugging
 
+        # Global Average Pooling (B, C, 1, 1)
+        y = self.avg_pool(x)  # (B, C, 1, 1)
+        y = y.squeeze(-1).transpose(-1, -2)  # (B, 1, C)
+        y = self.conv(y)  # Conv1D processing (B, 1, C)
+        y = self.sigmoid(y)  # Apply sigmoid
+        y = y.transpose(-1, -2).unsqueeze(-1)  # Reshape back to (B, C, 1, 1)
+
+        print(f"After ECA: {y.shape}")  # Debugging
+        return x * y.expand_as(x)  # Ensure output shape matches input (B, C, H, W)
 
 
 class SEAttention(nn.Module):
