@@ -283,7 +283,7 @@ class ECAAttention(nn.Module):
         channel: Number of channels of the input feature map
         k_size: Adaptive selection of kernel size
     """
-    def __init__(self, channel, k_size=5):
+    def __init__(self, channel, k_size=7):
         super(ECAAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
