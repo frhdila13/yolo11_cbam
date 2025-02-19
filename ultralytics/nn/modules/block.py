@@ -41,6 +41,7 @@ __all__ = (
     "CBFuse",
     "CBLinear",
     "C3k2",
+    "C3k2ECA",
     "C2fPSA",
     "C2PSA",
     "RepVGGDW",
@@ -720,6 +721,29 @@ class C3f(nn.Module):
         y = [self.cv2(x), self.cv1(x)]
         y.extend(m(y[-1]) for m in self.m)
         return self.cv3(torch.cat(y, 1))
+
+
+class C3k2ECA(C2f):
+    """C3k2 with Embedded ECA Attention."""
+
+    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True, k_size=5):
+        """Initializes C3k2ECA, a faster CSP Bottleneck with 2 convolutions and ECA."""
+        super().__init__(c1, c2, n, shortcut, g, e)
+        
+        # Define ECA module
+        self.eca = ECAAttention(self.c, k_size)
+
+        # Define the bottleneck layers (C3k or Bottleneck)
+        self.m = nn.ModuleList(
+            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck(self.c, self.c, shortcut, g)
+            for _ in range(n)
+        )
+
+    def forward(self, x):
+        """Applies C3k2 and ECA Attention."""
+        x = super().forward(x)  # Pass through the CSP bottleneck layers
+        return self.eca(x)  # Apply ECA after the bottlenecks
+
 
 
 class C3k2(C2f):
