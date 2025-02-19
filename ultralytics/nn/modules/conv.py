@@ -278,28 +278,22 @@ class RepConv(nn.Module):
 
 
 class ECAAttention(nn.Module):
-    """Efficient Channel Attention (ECA) Module"""
+    """ECA Module with shape-preserving fix."""
     def __init__(self, channel, k_size=7):
         super(ECAAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # Global spatial feature descriptor
-        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        b, c, h, w = x.shape  # Get batch size, channels, height, width
+        b, c, h, w = x.shape  # Get input shape
 
-        # Global Average Pooling -> (B, C, 1, 1)
-        y = self.avg_pool(x)
+        # Global Avg Pooling
+        y = self.avg_pool(x)  # Shape: (B, C, 1, 1)
+        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)  # Conv1D channel attention
+        y = self.sigmoid(y)  # Sigmoid activation
 
-        # Convert (B, C, 1, 1) → (B, 1, C), apply 1D conv, then reshape back
-        y = self.conv(y.squeeze(-1).transpose(-1, -2))  # (B, 1, C) after conv
-        y = y.transpose(-1, -2).unsqueeze(-1)  # (B, C, 1, 1) 
-
-        # Apply sigmoid activation
-        y = self.sigmoid(y)
-
-        # Apply attention to input tensor
-        return x * y.expand_as(x)
+        return x * y.expand_as(x)  # Ensure shape is (B, C, H, W)
 
 
 class SEAttention(nn.Module):
