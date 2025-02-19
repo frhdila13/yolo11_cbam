@@ -278,22 +278,24 @@ class RepConv(nn.Module):
 
 
 class ECAAttention(nn.Module):
-    """ECA Module with shape-preserving fix."""
+    """ECA Module with strict shape preservation."""
     def __init__(self, channel, k_size=7):
         super(ECAAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # Global pooling to (B, C, 1, 1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)  
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        b, c, h, w = x.shape  # Get input shape
+        b, c, h, w = x.shape  # Ensure we keep (B, C, H, W)
+        
+        # Global Average Pooling → (B, C, 1, 1)
+        y = self.avg_pool(x)
 
-        # Global Avg Pooling
-        y = self.avg_pool(x)  # Shape: (B, C, 1, 1)
-        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)  # Conv1D channel attention
-        y = self.sigmoid(y)  # Sigmoid activation
+        # Convert (B, C, 1, 1) → (B, 1, C), apply Conv1D, then reshape back
+        y = self.conv(y.view(b, 1, c))  # Ensure (B, 1, C) for Conv1D
+        y = self.sigmoid(y.view(b, c, 1, 1))  # Reshape back to (B, C, 1, 1)
 
-        return x * y.expand_as(x)  # Ensure shape is (B, C, H, W)
+        return x * y  # Element-wise multiply (B, C, H, W) * (B, C, 1, 1)
 
 
 class SEAttention(nn.Module):
