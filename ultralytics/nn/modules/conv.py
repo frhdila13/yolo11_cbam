@@ -286,16 +286,22 @@ class ECAAttention(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        b, c, h, w = x.shape  # Ensure we keep (B, C, H, W)
+        b, c, h, w = x.shape  # Get original input shape
         
-        # Global Average Pooling → (B, C, 1, 1)
-        y = self.avg_pool(x)
+        # Global Avg Pooling → (B, C, 1, 1)
+        y = self.avg_pool(x)  
 
         # Convert (B, C, 1, 1) → (B, 1, C), apply Conv1D, then reshape back
         y = self.conv(y.view(b, 1, c))  # Ensure (B, 1, C) for Conv1D
         y = self.sigmoid(y.view(b, c, 1, 1))  # Reshape back to (B, C, 1, 1)
 
-        return x * y  # Element-wise multiply (B, C, H, W) * (B, C, 1, 1)
+        # **EXPLICIT SIZE CHECK BEFORE MULTIPLICATION**
+        assert y.shape == (b, c, 1, 1), f"Mismatch: Expected {(b, c, 1, 1)}, got {y.shape}"
+        
+        # Expand to match (B, C, H, W)
+        y = y.expand(b, c, h, w)
+        
+        return x * y  # Element-wise multiply (B, C, H, W) * (B, C, H, W)
 
 
 class SEAttention(nn.Module):
