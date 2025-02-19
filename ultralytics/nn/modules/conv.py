@@ -278,27 +278,26 @@ class RepConv(nn.Module):
 
 
 class ECAAttention(nn.Module):
-    """ECA Module with spatial shape preservation."""
-    def __init__(self, k_size=7):
+    """Constructs a ECA module.
+    Args:
+        channel: Number of channels of the input feature map
+        k_size: Adaptive selection of kernel size
+    """
+
+    def __init__(self, c1, k_size=3):
         super(ECAAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # Global pooling (B, C, 1, 1)
-        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)  # Conv1D across channels
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        b, c, h, w = x.shape  # Preserve input dimensions
-        print(f"Before ECA: {x.shape}")  # Debugging
+        # feature descriptor on the global spatial information
+        y = self.avg_pool(x)
+        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
+        # Multi-scale information fusion
+        y = self.sigmoid(y)
 
-        # Apply global average pooling to get (B, C, 1, 1)
-        y = self.avg_pool(x)  # (B, C, 1, 1)
-        y = y.view(b, 1, c)  # Reshape to (B, 1, C) for Conv1D
-        y = self.conv(y)  # Apply 1D Convolution (B, 1, C)
-        y = self.sigmoid(y)  # Sigmoid activation
-        y = y.view(b, c, 1, 1)  # Reshape back to (B, C, 1, 1)
-
-        print(f"After ECA: {y.shape}")  # Debugging
-
-        return x * y  # Element-wise multiplication, preserving (H, W)
+        return x * y.expand_as(x)
 
 
 class SEAttention(nn.Module):
@@ -372,7 +371,6 @@ class Concat(nn.Module):
 
     def forward(self, x):
         """Forward pass for the YOLOv8 mask Proto module."""
-        print([t.shape for t in x])  # Debugging: Print shapes before concatenation
         return torch.cat(x, self.d)  # Ensure dimensions match
 
 
