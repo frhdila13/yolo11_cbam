@@ -327,8 +327,9 @@ class Concat(nn.Module):
         self.d = dimension
 
     def forward(self, x):
-        """Forward pass for the YOLOv8 mask Proto module."""
-        return torch.cat(x, self.d)
+        for i, xi in enumerate(x):
+            print(f"Tensor {i} shape before Concat: {xi.shape}")  # Debug
+        return torch.cat(x, self.d)  # Ensure dimensions match
 
 
 class Index(nn.Module):
