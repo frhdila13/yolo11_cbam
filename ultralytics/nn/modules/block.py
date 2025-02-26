@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
 
-from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad, ECAAttention
+from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad, ECAAttention, CBAM
 from .transformer import TransformerBlock  
 
 __all__ = (
@@ -42,6 +42,7 @@ __all__ = (
     "CBLinear",
     "C3k2",
     "C3k2ECA",
+    "C3k2CBAM"
     "C2fPSA",
     "C2PSA",
     "RepVGGDW",
@@ -744,7 +745,24 @@ class C3k2ECA(C2f):
         x = super().forward(x)  # Pass through the CSP bottleneck layers
         return self.eca(x)  # Apply ECA after the bottlenecks
 
+class C3k2CBAM(C2f):
+    """Faster Implementation of CSP Bottleneck with 2 convolutions, now with CBAM."""
 
+    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
+        """Initializes the C3k2 module with CBAM for better attention."""
+        super().__init__(c1, c2, n, shortcut, g, e)
+        self.m = nn.ModuleList(
+            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck(self.c, self.c, shortcut, g) for _ in range(n)
+        )
+        self.cbam = CBAM(self.c)  # Add CBAM to refine features
+
+    def forward(self, x):
+        y = []
+        for m in self.m:
+            x = m(x)  # Apply Bottleneck or C3k block
+            x = self.cbam(x)  # Apply CBAM after each bottleneck block
+            y.append(x)
+        return self.c2(torch.cat(y, 1))  # Merge outputs and return
 
 class C3k2(C2f):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
