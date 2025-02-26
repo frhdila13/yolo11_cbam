@@ -746,23 +746,25 @@ class C3k2ECA(C2f):
         return self.eca(x)  # Apply ECA after the bottlenecks
 
 class C3k2CBAM(C2f):
-    """Faster Implementation of CSP Bottleneck with 2 convolutions, now with CBAM."""
+    """C3k2 with Embedded CBAM Attention."""
 
     def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
-        """Initializes the C3k2 module with CBAM for better attention."""
+        """Initializes C3k2CBAM, a faster CSP Bottleneck with 2 convolutions and CBAM."""
         super().__init__(c1, c2, n, shortcut, g, e)
+
+        # Define CBAM module
+        self.cbam = CBAM(self.c)
+
+        # Define the bottleneck layers (C3k or Bottleneck)
         self.m = nn.ModuleList(
-            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck(self.c, self.c, shortcut, g) for _ in range(n)
+            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck(self.c, self.c, shortcut, g)
+            for _ in range(n)
         )
-        self.cbam = CBAM(self.c)  # Add CBAM to refine features
 
     def forward(self, x):
-        y = []
-        for m in self.m:
-            x = m(x)  # Apply Bottleneck or C3k block
-            x = self.cbam(x)  # Apply CBAM after each bottleneck block
-            y.append(x)
-        return self.c2(torch.cat(y, 1))  # Merge outputs and return
+        """Applies C3k2 and CBAM Attention."""
+        x = super().forward(x)  # Pass through the CSP bottleneck layers
+        return self.cbam(x)  # Apply CBAM after the bottlenecks
 
 class C3k2(C2f):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
