@@ -376,50 +376,53 @@ class CoordAtt(nn.Module):
         return out
 
 
-def channel_shuffle(x, groups=2):  ##shuffle channel
-    # RESHAPE----->transpose------->Flatten
-    B, C, H, W = x.size()
-    out = x.view(B, groups, C // groups, H, W).permute(0, 2, 1, 3, 4).contiguous()
-    out = out.view(B, C, H, W)
-    return out
-
-
 class GAM(nn.Module):
-    def __init__(self, c1, c2, group=True, rate=4):
-        super(GAM, self).__init__()
+    def __init__(self, in_channels, out_channels, rate=4):
+        super().__init__()
+        in_channels = int(in_channels)
+        out_channels = int(out_channels)
+        inchannel_rate = int(in_channels/rate)
 
-        self.channel_attention = nn.Sequential(
-            nn.Linear(c1, int(c1 / rate)),
-            nn.ReLU(inplace=True),
-            nn.Linear(int(c1 / rate), c1)
-        )
 
-        self.spatial_attention = nn.Sequential(
+        self.linear1 = nn.Linear(in_channels, inchannel_rate)
+        self.relu = nn.ReLU(inplace=True)
+        self.linear2 = nn.Linear(inchannel_rate, in_channels)
+        
 
-            nn.Conv2d(c1, c1 // rate, kernel_size=7, padding=3, groups=rate) if group else nn.Conv2d(c1, int(c1 / rate),
-                                                                                                     kernel_size=7,
-                                                                                                     padding=3),
-            nn.BatchNorm2d(int(c1 / rate)),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(c1 // rate, c2, kernel_size=7, padding=3, groups=rate) if group else nn.Conv2d(int(c1 / rate), c2,
-                                                                                                     kernel_size=7,
-                                                                                                     padding=3),
-            nn.BatchNorm2d(c2)
-        )
+        self.conv1=nn.Conv2d(in_channels, inchannel_rate,kernel_size=7,padding=3,padding_mode='replicate')
 
-    def forward(self, x):
+        self.conv2=nn.Conv2d(inchannel_rate, out_channels,kernel_size=7,padding=3,padding_mode='replicate')
+
+        self.norm1 = nn.BatchNorm2d(inchannel_rate)
+        self.norm2 = nn.BatchNorm2d(out_channels)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self,x):
         b, c, h, w = x.shape
+        # B,C,H,W ==> B,H*W,C
         x_permute = x.permute(0, 2, 3, 1).view(b, -1, c)
-        x_att_permute = self.channel_attention(x_permute).view(b, h, w, c)
+        
+        # B,H*W,C ==> B,H,W,C
+        x_att_permute = self.linear2(self.relu(self.linear1(x_permute))).view(b, h, w, c)
+
+        # B,H,W,C ==> B,C,H,W
         x_channel_att = x_att_permute.permute(0, 3, 1, 2)
-        # x_channel_att=channel_shuffle(x_channel_att,4) #last shuffle
+
         x = x * x_channel_att
 
-        x_spatial_att = self.spatial_attention(x).sigmoid()
-        x_spatial_att = channel_shuffle(x_spatial_att, 4)  # last shuffle
+        x_spatial_att = self.relu(self.norm1(self.conv1(x)))
+        x_spatial_att = self.sigmoid(self.norm2(self.conv2(x_spatial_att)))
+        
         out = x * x_spatial_att
-        # out=channel_shuffle(out,4) #last shuffle
+
         return out
+
+if __name__ == '__main__':
+    img = torch.rand(1,64,32,48)
+    b, c, h, w = img.shape
+    net = GAM(in_channels=c, out_channels=c)
+    output = net(img)
+    print(output.shape)
 
 
 class CBAM(nn.Module):
