@@ -384,9 +384,9 @@ def channel_shuffle(x, groups=2):  ##shuffle channel
     return out
 
 
-class GAM_Attention(nn.Module):
+class GAM(nn.Module):
     def __init__(self, c1, c2, group=True, rate=4):
-        super(GAM_Attention, self).__init__()
+        super(GAM, self).__init__()
 
         self.channel_attention = nn.Sequential(
             nn.Linear(c1, int(c1 / rate)),
