@@ -78,6 +78,7 @@ from .conv import (
     ECAAttention,
     SEAttention,
     CoordAtt,
+    GAM,
 )
 from .head import OBB, Classify, Detect, Pose, RTDETRDecoder, Segment, WorldDetect, v10Detect
 from .transformer import (
