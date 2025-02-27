@@ -36,6 +36,7 @@ from ultralytics.nn.modules import (
     C3k2,
     C3k2ECA,
     C3k2CBAM,
+    GAM,
     C3x,
     CBFuse,
     CBLinear,
@@ -1088,6 +1089,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = ch[f]
             args = [c2, *args]
         elif m is SEAttention:
+            c2 = ch[f]
+            args = [c2, *args]
+        elif m is GAM:
             c2 = ch[f]
             args = [c2, *args]
         else:
