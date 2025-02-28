@@ -74,7 +74,7 @@ class Inference:
         menu_style_cfg = """<style>MainMenu {visibility: hidden;}</style>"""  # Hide main menu style
 
         # Main title of streamlit application
-        main_title_cfg = """<div><h1 style="color:#FF64DA; text-align:center; font-size:40px; margin-top:-50px;
+        main_title_cfg = """<div><h1 style="color:#042AFF; text-align:center; font-size:40px; margin-top:-50px;
         font-family: 'Archivo', sans-serif; margin-bottom:20px;">Oil Palm Detection with YOLO Application</h1></div>"""
 
         # Subtitle of streamlit application
