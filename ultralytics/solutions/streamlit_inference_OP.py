@@ -75,7 +75,7 @@ class Inference:
 
         # Main title of streamlit application
         main_title_cfg = """<div><h1 style="color:#FF64DA; text-align:center; font-size:40px; margin-top:-50px;
-        font-family: 'Archivo', sans-serif; margin-bottom:20px;">Ultralytics YOLO Streamlit Application</h1></div>"""
+        font-family: 'Archivo', sans-serif; margin-bottom:20px;">Oil Palm Detection with YOLO Application</h1></div>"""
 
         # Subtitle of streamlit application
         sub_title_cfg = """<div><h4 style="color:#042AFF; text-align:center; font-family: 'Archivo', sans-serif; 
@@ -93,21 +93,25 @@ class Inference:
         with self.st.sidebar:  # Add Ultralytics LOGO
             logo = "https://raw.githubusercontent.com/ultralytics/assets/main/logo/Ultralytics_Logotype_Original.svg"
             self.st.image(logo, width=250)
-
-        self.st.sidebar.title("User Configuration")  # Add elements to vertical setting menu
+    
+        self.st.sidebar.title("User Configuration")  # Sidebar Title
+    
+        # ✅ Add "image" option in source selection
         self.source = self.st.sidebar.selectbox(
-            "Video",
-            ("webcam", "video"),
-        )  # Add source selection dropdown
+            "Select Source",
+            ("webcam", "video", "image"),  # Added "image"
+        )
+    
         self.enable_trk = self.st.sidebar.radio("Enable Tracking", ("Yes", "No"))  # Enable object tracking
-        self.conf = float(
-            self.st.sidebar.slider("Confidence Threshold", 0.0, 1.0, self.conf, 0.01)
-        )  # Slider for confidence
-        self.iou = float(self.st.sidebar.slider("IoU Threshold", 0.0, 1.0, self.iou, 0.01))  # Slider for NMS threshold
-
+    
+        # Sliders for model parameters
+        self.conf = float(self.st.sidebar.slider("Confidence Threshold", 0.0, 1.0, self.conf, 0.01))
+        self.iou = float(self.st.sidebar.slider("IoU Threshold", 0.0, 1.0, self.iou, 0.01))
+    
         col1, col2 = self.st.columns(2)
         self.org_frame = col1.empty()
         self.ann_frame = col2.empty()
+
 
     def source_upload(self):
         """Handles image and video file uploads through the Streamlit interface."""
