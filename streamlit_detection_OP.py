@@ -15,7 +15,8 @@ from ultralytics.utils import LOGGER
 from ultralytics.utils.checks import check_requirements
 from ultralytics.utils.downloads import GITHUB_ASSETS_STEMS
 
-# Define file IDs for each model (replace with actual Google Drive file IDs)
+
+# Define Google Drive file IDs
 GDRIVE_MODELS = {
     "YOLO11m_baseline": "1RYJiKwAV2Ueg05_W9U20Y_h0D5SYDFpC",
     "YOLO11m_CA": "1E4F7t67ZfkiYOsaI_m1iOIhm9N0JjElv",
@@ -24,23 +25,31 @@ GDRIVE_MODELS = {
 }
 
 def download_from_gdrive(file_id, model_name):
-    """Downloads YOLO model from Google Drive if not found locally."""
+    """Downloads a YOLO model from Google Drive with confirmation handling."""
     model_path = f"models/{model_name}.pt"
 
-    if not os.path.exists(model_path):  # Check if model exists
-        os.makedirs("models", exist_ok=True)  # Create "models" folder if needed
-        url = f"https://drive.google.com/uc?id={file_id}"
-        
-        print(f"📥 Downloading {model_name}.pt ...")
-        gdown.download(url, model_path, quiet=False)
+    if not os.path.exists(model_path):  # Only download if missing
+        os.makedirs("models", exist_ok=True)  # Ensure folder exists
 
-        if os.path.exists(model_path) and os.path.getsize(model_path) > 10_000:
-            print(f"✅ Successfully downloaded {model_name}.pt.")
-        else:
-            print(f"❌ Error: {model_name}.pt download failed. Check file ID.")
-            os.remove(model_path)  # Delete incomplete file
+        print(f"📥 Downloading {model_name}.pt ...")
+        url = f"https://drive.google.com/uc?id={file_id}&confirm=t"
+
+        try:
+            gdown.download(url, model_path, quiet=False, fuzzy=True)
+
+            # Validate file size (to check if download was successful)
+            if os.path.exists(model_path) and os.path.getsize(model_path) > 10_000:
+                print(f"✅ Successfully downloaded {model_name}.pt ({os.path.getsize(model_path)} bytes).")
+            else:
+                print(f"❌ Error: {model_name}.pt download failed or incomplete. Try manual download.")
+                os.remove(model_path)  # Remove corrupted file
+        except Exception as e:
+            print(f"❌ Download error: {e}")
     else:
         print(f"✅ {model_name}.pt already exists. Skipping download.")
+
+# Example: Download a model
+download_from_gdrive(GDRIVE_MODELS["YOLO11m_baseline"], "YOLO11m_baseline")
 
 
 class Inference:
