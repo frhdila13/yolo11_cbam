@@ -137,35 +137,37 @@ class Inference:
             if img_file is not None:
                 self.image_data = img_file  # Store uploaded image
 
-    
     def download_from_gdrive(file_id, model_name):
         """Downloads YOLO model from Google Drive if not found locally."""
         model_path = f"models/{model_name}.pt"
-        if not os.path.exists(model_path):
+    
+        if not os.path.exists(model_path):  # Check if model exists
             url = f"https://drive.google.com/uc?id={file_id}"
             response = requests.get(url, stream=True)
+    
             if response.status_code == 200:
-                os.makedirs("models", exist_ok=True)
+                os.makedirs("models", exist_ok=True)  # Create "models" folder if it doesn't exist
+                
                 with open(model_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=1024):
                         f.write(chunk)
+                        
                 print(f"✅ Downloaded {model_name}.pt from Google Drive.")
             else:
                 print(f"❌ Failed to download {model_name}.pt. Check the file ID and permissions.")
 
-    # Define file IDs for each model (replace with your actual Google Drive file IDs)
+    # Define file IDs for each model (replace with actual Google Drive file IDs)
     GDRIVE_MODELS = {
-        "YOLO11m (baseline)": "1RYJiKwAV2Ueg05_W9U20Y_h0D5SYDFpC",  
-        "YOLO11m + CA": "1E4F7t67ZfkiYOsaI_m1iOIhm9N0JjElv",  
-        "YOLO11m + ECA": "1ZdrB2IcubfM6uJsio4dEOBEcKzlae6-S",  
-        "YOLO11m + CBAM": "1jKIStEJRGLGhvEPtAx3tRf8O4VLLwwdB", 
+        "YOLO11m_baseline": "1RYJiKwAV2Ueg05_W9U20Y_h0D5SYDFpC",
+        "YOLO11m_CA": "1E4F7t67ZfkiYOsaI_m1iOIhm9N0JjElv",
+        "YOLO11m_ECA": "1ZdrB2IcubfM6uJsio4dEOBEcKzlae6-S",
+        "YOLO11m_CBAM": "1jKIStEJRGLGhvEPtAx3tRf8O4VLLwwdB",
     }
 
-    
     def configure(self):
         """Configures the model and loads selected classes for inference."""
-        available_models = list(GDRIVE_MODELS.keys())  # Only display models from Google Drive
-    
+        available_models = list(GDRIVE_MODELS.keys())  # Only display trained models
+        
         selected_model = self.st.sidebar.selectbox("Model", available_models)
     
         # Ensure the model is downloaded before loading
@@ -175,6 +177,7 @@ class Inference:
             self.model = YOLO(f"models/{selected_model}.pt")  
             class_names = list(self.model.names.values())  
         self.st.success("Model loaded successfully!")
+
 
     def inference(self):
         """Performs real-time object detection inference."""
