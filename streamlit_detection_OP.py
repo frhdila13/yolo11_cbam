@@ -4,7 +4,7 @@ import io
 from typing import Any
 
 import os
-import requests
+import gdown
 
 import cv2
 import numpy as np
@@ -28,19 +28,19 @@ def download_from_gdrive(file_id, model_name):
     model_path = f"models/{model_name}.pt"
 
     if not os.path.exists(model_path):  # Check if model exists
+        os.makedirs("models", exist_ok=True)  # Create "models" folder if needed
         url = f"https://drive.google.com/uc?id={file_id}"
-        response = requests.get(url, stream=True)
+        
+        print(f"📥 Downloading {model_name}.pt ...")
+        gdown.download(url, model_path, quiet=False)
 
-        if response.status_code == 200:
-            os.makedirs("models", exist_ok=True)  # Create "models" folder if needed
-            
-            with open(model_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    f.write(chunk)
-                    
-            print(f"✅ Downloaded {model_name}.pt from Google Drive.")
+        if os.path.exists(model_path) and os.path.getsize(model_path) > 10_000:
+            print(f"✅ Successfully downloaded {model_name}.pt.")
         else:
-            print(f"❌ Failed to download {model_name}.pt. Check the file ID and permissions.")
+            print(f"❌ Error: {model_name}.pt download failed. Check file ID.")
+            os.remove(model_path)  # Delete incomplete file
+    else:
+        print(f"✅ {model_name}.pt already exists. Skipping download.")
 
 
 class Inference:
