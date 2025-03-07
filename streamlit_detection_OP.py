@@ -19,27 +19,30 @@ from ultralytics.utils.downloads import GITHUB_ASSETS_STEMS
 # Define Google Drive file IDs
 GDRIVE_MODELS = {
     "YOLO11m_baseline": "1RYJiKwAV2Ueg05_W9U20Y_h0D5SYDFpC",
-    "YOLO11m_CA": "1E4F7t67ZfkiYOsaI_m1iOIhm9N0JjElv",
+    "YOLO11m_CA": "1-vh_zLz9OMVCO_6CueKx_MSVVJrCrNhF", 
     "YOLO11m_ECA": "1ZdrB2IcubfM6uJsio4dEOBEcKzlae6-S",
     "YOLO11m_CBAM": "1jKIStEJRGLGhvEPtAx3tRf8O4VLLwwdB",
 }
 
-def download_from_gdrive(file_id, model_name):
-    """Downloads a YOLO model from Google Drive with confirmation handling."""
-    model_path = f"models/{model_name}.pt"
 
+def download_from_gdrive(file_id, model_name):
+    """Downloads a YOLO model from Google Drive using wget with confirmation handling."""
+    model_path = f"models/{model_name}.pt"
+    
     if not os.path.exists(model_path):  # Only download if missing
         os.makedirs("models", exist_ok=True)  # Ensure folder exists
 
         print(f"📥 Downloading {model_name}.pt ...")
-        url = f"https://drive.google.com/uc?id={file_id}&confirm=t"
-
+        
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        command = f"wget --no-check-certificate -O {model_path} '{url}'"
+        
         try:
-            gdown.download(url, model_path, quiet=False, fuzzy=True)
-
+            os.system(command)
+            
             # Validate file size (to check if download was successful)
             if os.path.exists(model_path) and os.path.getsize(model_path) > 10_000:
-                print(f"✅ Successfully downloaded {model_name}.pt ({os.path.getsize(model_path)} bytes).")
+                print(f"✅ Successfully downloaded {model_name}.pt ({os.path.getsize(model_path) / (1024 * 1024):.2f} MB).")
             else:
                 print(f"❌ Error: {model_name}.pt download failed or incomplete. Try manual download.")
                 os.remove(model_path)  # Remove corrupted file
@@ -47,9 +50,6 @@ def download_from_gdrive(file_id, model_name):
             print(f"❌ Download error: {e}")
     else:
         print(f"✅ {model_name}.pt already exists. Skipping download.")
-
-# Example: Download a model
-download_from_gdrive(GDRIVE_MODELS["YOLO11m_baseline"], "YOLO11m_baseline")
 
 
 class Inference:
