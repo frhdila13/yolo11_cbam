@@ -3,6 +3,9 @@
 import io
 from typing import Any
 
+import os
+import requests
+
 import cv2
 import numpy as np
 
@@ -134,26 +137,44 @@ class Inference:
             if img_file is not None:
                 self.image_data = img_file  # Store uploaded image
 
+    
+    def download_from_gdrive(file_id, model_name):
+    """Downloads YOLO model from Google Drive if not found locally."""
+    model_path = f"models/{model_name}.pt"
+    if not os.path.exists(model_path):
+        url = f"https://drive.google.com/uc?id={file_id}"
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            os.makedirs("models", exist_ok=True)
+            with open(model_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=1024):
+                    f.write(chunk)
+            print(f"✅ Downloaded {model_name}.pt from Google Drive.")
+        else:
+            print(f"❌ Failed to download {model_name}.pt. Check the file ID and permissions.")
 
+    # Define file IDs for each model (replace with your actual Google Drive file IDs)
+    GDRIVE_MODELS = {
+        "YOLO11m (baseline)": "1RYJiKwAV2Ueg05_W9U20Y_h0D5SYDFpC",  
+        "YOLO11m + CA": "1E4F7t67ZfkiYOsaI_m1iOIhm9N0JjElv",  
+        "YOLO11m + ECA": "1ZdrB2IcubfM6uJsio4dEOBEcKzlae6-S",  
+        "YOLO11m + CBAM": "1jKIStEJRGLGhvEPtAx3tRf8O4VLLwwdB", 
+    }
+
+    
     def configure(self):
         """Configures the model and loads selected classes for inference."""
-        # Add dropdown menu for model selection
-        available_models = [x.replace("yolo", "YOLO") for x in GITHUB_ASSETS_STEMS if x.startswith("yolo11")]
-        if self.model_path:  # If user provided the custom model, insert model without suffix as *.pt is added later
-            available_models.insert(0, self.model_path.split(".pt")[0])
+        available_models = list(GDRIVE_MODELS.keys())  # Only display models from Google Drive
+    
         selected_model = self.st.sidebar.selectbox("Model", available_models)
-
-        with self.st.spinner("Model is downloading..."):
-            self.model = YOLO(f"{selected_model.lower()}.pt")  # Load the YOLO model
-            class_names = list(self.model.names.values())  # Convert dictionary to list of class names
+    
+        # Ensure the model is downloaded before loading
+        download_from_gdrive(GDRIVE_MODELS[selected_model], selected_model)
+    
+        with self.st.spinner("Model is loading..."):
+            self.model = YOLO(f"models/{selected_model}.pt")  
+            class_names = list(self.model.names.values())  
         self.st.success("Model loaded successfully!")
-
-        # Multiselect box with class names and get indices of selected classes
-        selected_classes = self.st.sidebar.multiselect("Classes", class_names, default=class_names[:3])
-        self.selected_ind = [class_names.index(option) for option in selected_classes]
-
-        if not isinstance(self.selected_ind, list):  # Ensure selected_options is a list
-            self.selected_ind = list(self.selected_ind)
 
     def inference(self):
         """Performs real-time object detection inference."""
