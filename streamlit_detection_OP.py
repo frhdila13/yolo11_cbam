@@ -139,19 +139,19 @@ class Inference:
 
     
     def download_from_gdrive(file_id, model_name):
-    """Downloads YOLO model from Google Drive if not found locally."""
-    model_path = f"models/{model_name}.pt"
-    if not os.path.exists(model_path):
-        url = f"https://drive.google.com/uc?id={file_id}"
-        response = requests.get(url, stream=True)
-        if response.status_code == 200:
-            os.makedirs("models", exist_ok=True)
-            with open(model_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    f.write(chunk)
-            print(f"✅ Downloaded {model_name}.pt from Google Drive.")
-        else:
-            print(f"❌ Failed to download {model_name}.pt. Check the file ID and permissions.")
+        """Downloads YOLO model from Google Drive if not found locally."""
+        model_path = f"models/{model_name}.pt"
+        if not os.path.exists(model_path):
+            url = f"https://drive.google.com/uc?id={file_id}"
+            response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                os.makedirs("models", exist_ok=True)
+                with open(model_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        f.write(chunk)
+                print(f"✅ Downloaded {model_name}.pt from Google Drive.")
+            else:
+                print(f"❌ Failed to download {model_name}.pt. Check the file ID and permissions.")
 
     # Define file IDs for each model (replace with your actual Google Drive file IDs)
     GDRIVE_MODELS = {
